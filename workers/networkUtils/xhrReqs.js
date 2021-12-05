@@ -59,6 +59,7 @@ function timetablePostRequest() {
       // Concatenate Data as it's recieved
       res.on("data", (d) => {
         const htmlString = d.toString("utf-8");
+        console.log(htmlString);
         body.push(htmlString);
       });
 

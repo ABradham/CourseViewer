@@ -1,33 +1,29 @@
 const redis = require("redis");
 
-const main = async () => {
-  const client = createClient();
-  client.on("error", (err) => console.log("Redis Client Error", err));
-  await client.connect();
-
-  //await client.set("key", "value");
-  const value = await client.get("key");
-
-  console.log(`Got ${value} from database`);
-};
-
 const saveObjList = async (keyName, list) => {
   // Create redis client
   const client = redis.createClient();
 
   // Check for error
   client.on("error", (err) => {
-    console.log("[redisClient]: Error connecting to redis");
-    return null;
+    throw new Error("[redisClient]: Error connecting to redis");
   });
 
   // Connect to redis store
-  await client.connect();
+  try {
+    await client.connect();
+    console.log("[redisClient]: Connected to redis store");
+  } catch (e) {
+    throw new Error("[redisClient]: Error connecting to redis store");
+  }
 
-  console.log("[redisClient]: Connected to redis store");
   // Stringify list and save to redis store
   const listAsString = JSON.stringify(list);
-  await client.set(keyName, listAsString);
+  try {
+    await client.set(keyName, listAsString);
+  } catch (e) {
+    throw new Error("[redisClient]: Failed to save keys to redis store");
+  }
 
   // Disconnect from redis client
   await client.disconnect();
