@@ -44,6 +44,8 @@ async function fetchCS() {
   // HTTP POST request
   console.log("[fetchCS]: Started Function");
   const htmlData = await xhrReqs.postFormData();
+
+  // Check if any data was recived
   if (htmlData == null) {
     console.log("[fetchCS]: Couldn't load HTML from page; Ending script.");
     return;
@@ -52,6 +54,16 @@ async function fetchCS() {
   // Scraping data from HTML
   const $ = cheerio.load(htmlData);
   const allTableRows = $(".data-table > table > tbody > tr").toArray();
+
+  // Check if there are courses listed on the page. If not, exit script.
+  if (allTableRows.length < 2) {
+    console.log(
+      "[fetchCS]: No courses listed on recived webpage; Exiting script"
+    );
+    return;
+  }
+
+  // If courses are listed, parse html and save course objects to redis store.
   allTableRows.forEach((row) => {
     // Exclude first row because it holds table headers and no real data
     if (row !== allTableRows[0]) {
@@ -65,8 +77,13 @@ async function fetchCS() {
   console.log("[fetchCS]: Finished converting tables to objects");
   console.log(`[fetchCS]: Collected ${allCourseObjects.length} courses`);
 
-  await saveToRedis(CSClassKey, allCourseObjects);
-  console.log("[fetchCS]: Saved course data to redis store");
+  try {
+    await saveToRedis(CSClassKey, allCourseObjects);
+    console.log("[fetchCS]: Saved course data to redis store");
+  } catch (e) {
+    console.log("[fetchCS]: Failed to save course data to redis");
+    console.log(e);
+  }
 }
 
 module.exports = fetchCS;
