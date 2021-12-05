@@ -69,6 +69,4 @@ async function fetchCS() {
   console.log("[fetchCS]: Saved course data to redis store");
 }
 
-fetchCS();
-
 module.exports = fetchCS;
