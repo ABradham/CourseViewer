@@ -28,7 +28,7 @@ function hasAllUserCharacteristics(potentialUser) {
   return (
     potentialUser.name &&
     potentialUser.phoneNum &&
-    potentialUser.courseNumbers.length > 0
+    potentialUser.courseNumbers != null
   );
 }
 
@@ -49,20 +49,36 @@ app.post("/createUser", async (req, res) => {
       courseNumbers: req.body.courseNumbers,
     };
 
+    // Check if a user with the same phone number is already registered
+    try {
+      //TODO: reuse this list when adding new user in the addUserToDB() function
+      var allUsers = await redisClient.getObjList("AllUsers");
+      if (allUsers.some((user) => user.phoneNum == newlyCreatedUser.phoneNum)) {
+        res.send({ succes: false, reason: "Same phone already registered" });
+        console.log("[/createUser]: Refused to create new user. Same phone #");
+        return;
+      }
+    } catch (e) {
+      console.log("[/createUser]: Couldn't load users from redis store.");
+      res.send({ succes: false });
+    }
+
     try {
       // Try to add new user to database
       await addUserToDB(newlyCreatedUser);
       // Allow endpoint access from client
       res.send({ success: true });
+      console.log("[/createUser]: Successfully added a new user");
     } catch (e) {
       // Send failure response if something goes wrong
-      console.log("Error adding user to database");
+      console.log("[/createUsers]: Error adding user to database");
       console.log(e);
       res.send({ success: false });
     }
   } else {
     // Send failure response if client JSON is incorrectly structured
     res.send({ success: false });
+    console.log("[/createUser]: Recieved request without correct body params");
   }
 });
 
